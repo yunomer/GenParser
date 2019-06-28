@@ -111,13 +111,10 @@ def execute(input_file_name,        # Basically list of accession IDs
     counter = 0
     long_delay = 0
 
-    # tsv file for data dump based on header list
-    tsv_file = open(tsv_file, "w")
-
-
+ 
     with codecs.open(input_file_name, 'r') as infile:
-        accs = grouper(infile.read().split("\n"), 300)
-        for chunk in accs:
+        chunks = grouper(infile.read().split("\n"), 300)
+        for chunk in chunks:
             print("Processed " + str(counter) + " records...")
             while "" in chunk:
                 chunk.remove('')
@@ -127,9 +124,7 @@ def execute(input_file_name,        # Basically list of accession IDs
                 for index, rec in enumerate(SeqIO.parse(fetched_gb, "gb")):
                     print("I was here!")
 
-                output_file.close()
-                tsv_file.close()
-                log_file.close()
+
             except urllib.error.HTTPError:
                 if urllib.error.HTTPError.code == 429:
                     time.sleep(5)
