@@ -144,15 +144,19 @@ def load_execute():
     execute(input_file_name, fasta_file, tsv_file, log_file, header_list, feature_list, recognition_list)
 
 
-# Main Processing function that parses that downloads and parses the information
-#   Basically list of accession IDs
-#   Name of the Fasta file the user wants to set
-#   Name of the tsv file the user wants to save data in
-#   Name of the log file the user wants to produce
-#   Header list
-#   Feature list to look for "Hooks" to extract Sequences
-#   Recognition "Hook" list
 def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, feature_list, recognition_list):
+    """
+    Main Processing function that parses that downloads and parses the information
+
+    :param input_file_name: Basically list of accession IDs                         - REQUIRED
+    :param fasta_file: Name of the Fasta file the user wants to set                 - NOT REQUIRED
+    :param tsv_file: Name of the tsv file the user wants to save data in            - NOT REQUIRED
+    :param log_file: Name of the log file the user wants to produce                 - NOT REQUIRED
+    :param header_list: Header list                                                 - REQUIRED
+    :param feature_list: Feature list to look for "Hooks" to extract Sequences      - NOT REQUIRED UNLESS RECOGNITION LIST EXISTS
+    :param recognition_list: Recognition "Hook" list                                - NOT REQUIRED UNLESS FEATURE LIST EXISTS
+    :return: Nothing
+    """
     counter = 0
     long_delay = 0
 
