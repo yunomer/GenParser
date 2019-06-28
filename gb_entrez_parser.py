@@ -42,22 +42,38 @@ def fetch_sequence(feature, recognition_list, record, feature_list):
                 return gene, sequence
         return gene, sequence
 
+#TODO: change output to a list and append all new found values to it
+def fetch_match(header, record):
+    """
+    Function to try to retrieve an annotation from a SeqRecord object, return empty string if not found
 
-# Function to try to retrieve an annotation from a SeqRecord object, return empty string if not found
-#   header is the header that we're looking to match and extract
-#   record is the genbank record for a specific accession ID
-def fetch_annotation(header, record):
-    output = ""
+    :param header: header is the header that we're looking to match and extract     -REQUIRED
+    :param record: record is the genbank record for a specific accession ID         -REQUIRED
+    :return:
+    """
+    output = []
     # Try and see if the header can be found in the root of the object record
     try:
-        output = record.header
-        return output
+        unPackKeys = [*record]
+        for key in unPackKeys:
+            matchRatio = fuzz.ratio(header, key)
+            if matchRatio > 90:
+                output.append(record.key)
+        if len(output) != 0:
+            return output
+        pass
     except KeyError:
         pass
     # If it header doesn't exist in the root of the object, try it's annotations section
     try:
-        output = record.annotations[header]
-        return output
+        unPackKeys = [*record.annotations]
+        for key in unPackKeys:
+            matchRatio = fuzz.ratio(header, key)
+            if matchRatio > 90:
+                output.append(record.annotations[key])
+        if len(output) != 0:
+            return output
+        pass
     except KeyError:
         pass
     # Finally, if the header doesn't exist in the root object annotations, check the associated objects.
@@ -65,7 +81,11 @@ def fetch_annotation(header, record):
         for featureIndex in range(0, len(record.features)):
             try:
                 feature_dict = record.features[featureIndex]
-                output = feature_dict.qualifiers[header]
+                unPackKeys = [*feature_dict.qualifiers]
+                for key in unPackKeys:
+                    matchRatio = fuzz.ratio(header, key)
+                    if matchRatio > 90:
+                        output.append(feature_dict.qualifiers[key])
             except KeyError:
                 pass
         return output
@@ -157,7 +177,9 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
     :param recognition_list: Recognition "Hook" list                                - NOT REQUIRED UNLESS FEATURE LIST EXISTS
     :return: Nothing
     """
+    # Count the number of Chunks processed
     counter = 0
+    # delay counter for HTTP errors
     long_delay = 0
 
     # Create workbook without creating it on file
@@ -177,8 +199,11 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
             acc_list = ",".join(chunk)
             try:
                 fetched_gb = Entrez.efetch(db="nucleotide", id=acc_list, rettype="gbwithparts", retmode="text")
-                for index, rec in enumerate(SeqIO.parse(fetched_gb, "gb")):
-                    print(rec)
+                for index, record in enumerate(SeqIO.parse(fetched_gb, "gb")):
+                    KeyValues = []
+                    for header in header_list:
+                        found = fetch_match(header, record)
+                        print(header, found)
                     exit(1)
 
             except urllib.error.HTTPError:
