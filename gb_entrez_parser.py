@@ -101,24 +101,19 @@ def load_execute():
 
 
 
-def execute(input_file_name, # Basically list of accession IDs
-            fasta_file,
-            tsv_file,
-            log_file,
-            header_list,
-            feature_list,
-            recognition_list):
+def execute(input_file_name,        # Basically list of accession IDs
+            fasta_file,             # Name of the Fasta file the user wants to set
+            tsv_file,               # Name of the tsv file the user wants to save data in
+            log_file,               # Name of the log file the user wants to produce
+            header_list,            # Header list
+            feature_list,           # Feature list to look for "Hooks" to extract Sequences
+            recognition_list):      # Recognition "Hook" list
     counter = 0
     long_delay = 0
 
-    output_file = open(fasta_file, "w")
     # tsv file for data dump based on header list
     tsv_file = open(tsv_file, "w")
-    # Log file to record Errors
-    log_file = open(log_file, "w")
-    for header in header_list:
-        tsv_file.write(header + "\t")
-    tsv_file.write("\n")
+
 
     with codecs.open(input_file_name, 'r') as infile:
         accs = grouper(infile.read().split("\n"), 300)
@@ -129,63 +124,11 @@ def execute(input_file_name, # Basically list of accession IDs
             acc_list = ",".join(chunk)
             try:
                 fetched_gb = Entrez.efetch(db="nucleotide", id=acc_list, rettype="gbwithparts", retmode="text")
-                unique_list_error_nonetype = []
-                unique_list_found = []
-                complete_list = []
                 for index, rec in enumerate(SeqIO.parse(fetched_gb, "gb")):
-                    print(rec)
-                    exit(1)
-                    complete_list.append(rec.id)
-                    for feature in rec.features:
-                        ret = parser(feature, recognition_list, rec, feature_list)
-                        if ret is None:
-                            if rec.id not in unique_list_error_nonetype:
-                                unique_list_error_nonetype.append(rec.id)
-                            break
-                        gene = ret[0]
-                        sequence = ret[1]
-                        if gene != "No appropriate gene found!":
-                            output_file.write("> " + rec.id + "|" + str(gene) + "\n" + str(sequence) + "\n")
-                            tsv_file.write(rec.id)
-                            for header in header_list:
-                                fetch_annotation_ret = fetch_annotation(header, rec)
-                                if header is "sequence":
-                                    fetch_annotation_ret = str(sequence)
-                                elif header is "taxonomy":
-                                    try:
-                                        fetch_annotation_ret = rec.annotations[header]
-                                    except IndexError:
-                                        fetch_annotation_ret = ""
-                                elif len(fetch_annotation_ret) > 0:
-                                    fetch_annotation_ret = fetch_annotation_ret[0]
-                                else:
-                                    fetch_annotation_ret = ""
+                    print("I was here!")
 
-                                if fetch_annotation_ret is not None:
-                                    tsv_file.write(str(fetch_annotation_ret) + "\t")
-                                else:
-                                    tsv_file.write("\t")
-                            tsv_file.write("\n")
-                            if rec.id not in unique_list_found:
-                                unique_list_found.append(rec.id)
-                            counter = counter + 1
-                            break
-                        else:
-                            pass
                 output_file.close()
                 tsv_file.close()
-
-                # Printing out the IDs with Nonetype error.
-                for accession_id in unique_list_error_nonetype:
-                    log_file.write(
-                        accession_id + "\t" + "No Data found!" + "\n")
-
-                for check in complete_list:
-                    if check not in unique_list_found:
-                        if check not in unique_list_error_nonetype:
-                            log_file.write(
-                                check + "\t" + "No Sequence found" + "\n")
-
                 log_file.close()
             except urllib.error.HTTPError:
                 if urllib.error.HTTPError.code == 429:
