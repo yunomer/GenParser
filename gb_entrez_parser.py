@@ -12,6 +12,7 @@ try:
     from fuzzywuzzy import fuzz
     from fuzzywuzzy import process
     from openpyxl import Workbook
+    from openpyxl import load_workbook
 except ImportError as err:
     print("Import error!: " + err.name)
     exit(1)
@@ -28,6 +29,49 @@ parser.add_argument("--recognition", help="Custom Recognition List")
 parser.add_argument("--feature", help="Custom Feature List")
 parser.add_argument("--header", help="Custom Headers List and data to pull out")
 args = parser.parse_args()
+
+
+def fetch_sequence(feature, recognition_list, record, feature_list):
+    for key, val in feature.qualifiers.items():
+        gene = "No appropriate gene found!"
+        sequence = "No sequence found!"
+        for value in val:
+            if value in recognition_list and (feature.type in feature_list):
+                gene = value
+                sequence = feature.location.extract(record).seq
+                return gene, sequence
+        return gene, sequence
+
+
+# Function to try to retrieve an annotation from a SeqRecord object, return empty string if not found
+#   header is the header that we're looking to match and extract
+#   record is the genbank record for a specific accession ID
+def fetch_annotation(header, record):
+    output = ""
+    # Try and see if the header can be found in the root of the object record
+    try:
+        output = record.header
+        return output
+    except KeyError:
+        pass
+    # If it header doesn't exist in the root of the object, try it's annotations section
+    try:
+        output = record.annotations[header]
+        return output
+    except KeyError:
+        pass
+    # Finally, if the header doesn't exist in the root object annotations, check the associated objects.
+    try:
+        for featureIndex in range(0, len(record.features)):
+            try:
+                feature_dict = record.features[featureIndex]
+                output = feature_dict.qualifiers[header]
+            except KeyError:
+                pass
+        return output
+    except:
+        return output
+
 
 def check_standard_input_files(stdin_file, stdin_list):
     if stdin_file is not None:
@@ -100,18 +144,26 @@ def load_execute():
     execute(input_file_name, fasta_file, tsv_file, log_file, header_list, feature_list, recognition_list)
 
 
-
-def execute(input_file_name,        # Basically list of accession IDs
-            fasta_file,             # Name of the Fasta file the user wants to set
-            tsv_file,               # Name of the tsv file the user wants to save data in
-            log_file,               # Name of the log file the user wants to produce
-            header_list,            # Header list
-            feature_list,           # Feature list to look for "Hooks" to extract Sequences
-            recognition_list):      # Recognition "Hook" list
+# Main Processing function that parses that downloads and parses the information
+#   Basically list of accession IDs
+#   Name of the Fasta file the user wants to set
+#   Name of the tsv file the user wants to save data in
+#   Name of the log file the user wants to produce
+#   Header list
+#   Feature list to look for "Hooks" to extract Sequences
+#   Recognition "Hook" list
+def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, feature_list, recognition_list):
     counter = 0
     long_delay = 0
 
- 
+    # Create workbook without creating it on file
+    wb = Workbook()
+    # Select worksheet
+    ws = wb.active
+    # Populate the sheet's headers with user inserted headers
+    for index, header in enumerate(header_list):
+        ws.cell(row=1, column=index+1, value=header)
+
     with codecs.open(input_file_name, 'r') as infile:
         chunks = grouper(infile.read().split("\n"), 300)
         for chunk in chunks:
@@ -122,8 +174,8 @@ def execute(input_file_name,        # Basically list of accession IDs
             try:
                 fetched_gb = Entrez.efetch(db="nucleotide", id=acc_list, rettype="gbwithparts", retmode="text")
                 for index, rec in enumerate(SeqIO.parse(fetched_gb, "gb")):
-                    print("I was here!")
-
+                    print(rec)
+                    exit(1)
 
             except urllib.error.HTTPError:
                 if urllib.error.HTTPError.code == 429:
@@ -135,11 +187,6 @@ def execute(input_file_name,        # Basically list of accession IDs
             if long_delay == 20:
                 time.sleep(20)
                 long_delay = 0
-
-
-
-
-
 
 
 if __name__ == '__main__':
