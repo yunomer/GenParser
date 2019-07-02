@@ -111,6 +111,7 @@ def grouper(iterable, n):
     for i in range(0, len(iterable), n):
         yield iterable[i:i + n]
 
+
 # TODO: need to return string instead of list
 def listToString(candidate):
     # if isinstance(candidate, str):
@@ -201,7 +202,8 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
         ws.cell(row=1, column=index+1, value=header)
 
     numberHeaders = len(header_list)
-
+    ws.cell(row=1, column=numberHeaders+1, value="gene")
+    ws.cell(row=1, column=numberHeaders + 2, value="sequence")
 
     with codecs.open(input_file_name, 'r') as infile:
         chunks = grouper(infile.read().split("\n"), 300)
@@ -217,6 +219,7 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                     # First get data to populate header fields
                     for header in header_list:
                         found = fetch_match(header, record)
+                        # print(header, found)
                         keyValues.append(found)
 
                     # Fetch the sequence data
@@ -224,6 +227,9 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                         seqInfo = fetch_sequence(feature, recognition_list, record, feature_list)
 
                     numberRepeats = len(seqInfo[1])
+
+                    if numberRepeats == 0:
+                        numberRepeats = 1
 
                     # Next populate the fields
                     for relativeLine in range(numberRepeats):
