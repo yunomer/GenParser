@@ -42,7 +42,7 @@ def fetch_sequence(feature, recognition_list, record, feature_list):
                 return gene, sequence
         return gene, sequence
 
-#TODO: change output to a list and append all new found values to it
+
 def fetch_match(header, record):
     """
     Function to try to retrieve an annotation from a SeqRecord object, return empty string if not found
@@ -112,6 +112,16 @@ def grouper(iterable, n):
     for i in range(0, len(iterable), n):
         yield iterable[i:i + n]
 
+def listToString(candidate):
+    return sum(([candidate] if not isinstance(candidate, list) else listToString(candidate) for candidate in candidate), [])
+    # if isinstance(candidate, str):
+    #     return candidate
+    # if isinstance(candidate, list):
+    #     if len(candidate) is 0:
+    #         listToString(" ")
+    #     else:
+    #         listToString(candidate[0])
+
 
 def load_execute():
     """
@@ -168,7 +178,7 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
     """
     Main Processing function that parses that downloads and parses the information
 
-    :param input_file_name: Basically list of accession IDs                         - REQUIRED
+    :param input_file_name: list of accession IDs                                   - REQUIRED
     :param fasta_file: Name of the Fasta file the user wants to set                 - NOT REQUIRED
     :param tsv_file: Name of the tsv file the user wants to save data in            - NOT REQUIRED
     :param log_file: Name of the log file the user wants to produce                 - NOT REQUIRED
@@ -190,6 +200,7 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
     for index, header in enumerate(header_list):
         ws.cell(row=1, column=index+1, value=header)
 
+
     with codecs.open(input_file_name, 'r') as infile:
         chunks = grouper(infile.read().split("\n"), 300)
         for chunk in chunks:
@@ -200,10 +211,23 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
             try:
                 fetched_gb = Entrez.efetch(db="nucleotide", id=acc_list, rettype="gbwithparts", retmode="text")
                 for index, record in enumerate(SeqIO.parse(fetched_gb, "gb")):
-                    KeyValues = []
+                    keyValues = []
+                    # First get data to populate header fields
                     for header in header_list:
                         found = fetch_match(header, record)
-                        print(header, found)
+                        keyValues.append(found)
+                    # Next populate the header fields
+                    for indexHeader in range(len(keyValues)):
+                        extractValue = listToString(keyValues[indexHeader])
+                        if len(extractValue) == 0:
+                            extractValue = " "
+                        else:
+                            extractValue = ", ".join(str(x) for x in extractValue)
+                        print(keyValues[indexHeader], extractValue)
+                        ws.cell(row=index+2, column=indexHeader+1, value=extractValue)
+                    # Now find the sequences the user wanted!
+
+                    wb.save("temp.xlsx")
                     exit(1)
 
             except urllib.error.HTTPError:
