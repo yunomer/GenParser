@@ -33,14 +33,13 @@ args = parser.parse_args()
 
 def fetch_sequence(feature, recognition_list, record, feature_list):
     for key, val in feature.qualifiers.items():
-        gene = "No appropriate gene found!"
-        sequence = "No sequence found!"
+        gene = []
+        sequence = []
         for value in val:
             if value in recognition_list and (feature.type in feature_list):
-                gene = value
-                sequence = feature.location.extract(record).seq
-                return gene, sequence
-        return gene, sequence
+                gene.append(value)
+                sequence.append(feature.location.extract(record).seq)
+        return feature.type, gene, sequence
 
 
 def fetch_match(header, record):
@@ -112,8 +111,8 @@ def grouper(iterable, n):
     for i in range(0, len(iterable), n):
         yield iterable[i:i + n]
 
+# TODO: need to return string instead of list
 def listToString(candidate):
-    return sum(([candidate] if not isinstance(candidate, list) else listToString(candidate) for candidate in candidate), [])
     # if isinstance(candidate, str):
     #     return candidate
     # if isinstance(candidate, list):
@@ -121,6 +120,7 @@ def listToString(candidate):
     #         listToString(" ")
     #     else:
     #         listToString(candidate[0])
+    return sum(([candidate] if not isinstance(candidate, list) else listToString(candidate) for candidate in candidate), [])
 
 
 def load_execute():
@@ -200,6 +200,8 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
     for index, header in enumerate(header_list):
         ws.cell(row=1, column=index+1, value=header)
 
+    numberHeaders = len(header_list)
+
 
     with codecs.open(input_file_name, 'r') as infile:
         chunks = grouper(infile.read().split("\n"), 300)
@@ -216,19 +218,29 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                     for header in header_list:
                         found = fetch_match(header, record)
                         keyValues.append(found)
-                    # Next populate the header fields
-                    for indexHeader in range(len(keyValues)):
-                        extractValue = listToString(keyValues[indexHeader])
-                        if len(extractValue) == 0:
-                            extractValue = " "
-                        else:
-                            extractValue = ", ".join(str(x) for x in extractValue)
-                        print(keyValues[indexHeader], extractValue)
-                        ws.cell(row=index+2, column=indexHeader+1, value=extractValue)
-                    # Now find the sequences the user wanted!
 
-                    wb.save("temp.xlsx")
-                    exit(1)
+                    # Fetch the sequence data
+                    for feature in record.features:
+                        seqInfo = fetch_sequence(feature, recognition_list, record, feature_list)
+
+                    numberRepeats = len(seqInfo[1])
+
+                    # Next populate the fields
+                    for relativeLine in range(numberRepeats):
+                        workingRow = ws.max_row
+                        for indexHeader in range(len(keyValues) + numberRepeats):
+                            if indexHeader < len(keyValues):
+                                extractValue = listToString(keyValues[indexHeader])
+                                if len(extractValue) == 0:
+                                    extractValue = " "
+                                else:
+                                    extractValue = ", ".join(str(x) for x in extractValue)
+                                ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
+                            else:
+                                ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqInfo[1][relativeLine]))
+                                ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqInfo[2][relativeLine]))
+
+                wb.save("temp.xlsx")
 
             except urllib.error.HTTPError:
                 if urllib.error.HTTPError.code == 429:
