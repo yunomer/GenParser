@@ -32,6 +32,12 @@ args = parser.parse_args()
 
 
 def fetch_sequence(feature, recognition_list, record, feature_list):
+    # TODO: Figure out if qualifiers are always present or not.
+    # NOTE: Add
+
+    qualifierKeys = feature.qualifiers.keys()
+    qualifierItems = feature.qualifiers.item()
+
     for key, val in feature.qualifiers.items():
         gene = []
         sequence = []
@@ -222,15 +228,21 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                         # print(header, found)
                         keyValues.append(found)
 
+                    seqBatch = []
                     # Fetch the sequence data
                     for feature in record.features:
                         seqInfo = fetch_sequence(feature, recognition_list, record, feature_list)
+                        # If no sequence exists don't append to the list
+                        if len(seqInfo[1]) != 0:
+                            seqBatch.append(seqInfo)
 
-                    numberRepeats = len(seqInfo[1])
+                    numberRepeats = len(seqBatch)
 
                     if numberRepeats == 0:
                         numberRepeats = 1
 
+                    print(seqBatch)
+                    exit(1)
                     # Next populate the fields
                     for relativeLine in range(numberRepeats):
                         workingRow = ws.max_row
@@ -243,8 +255,8 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                     extractValue = ", ".join(str(x) for x in extractValue)
                                 ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
                             else:
-                                ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqInfo[1][relativeLine]))
-                                ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqInfo[2][relativeLine]))
+                                ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][relativeLine]))
+                                ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqBatch[relativeLine][2][relativeLine]))
 
                 wb.save("temp.xlsx")
 
