@@ -215,6 +215,14 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
     # delay counter for HTTP errors
     long_delay = 0
 
+    # Logs list. Accessions with no Sequences
+    logs_list = []
+
+    # Fasta List and sequence List
+    fasta_list = []
+    fasta_feature = []
+    fasta_sequence = []
+
     # Create workbook without creating it on file
     wb = Workbook()
     # Select worksheet
@@ -268,9 +276,15 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                     extractValue = ", ".join(str(x) for x in extractValue)
                                 ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
                             else:
+                                # If no sequences were found here. Add to logs list
                                 if len(seqBatch) != 0:
                                     ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][relativeLine]))
                                     ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqBatch[relativeLine][2][relativeLine]))
+                                    fasta_list.append(record.id)
+                                    fasta_feature.append(seqBatch[relativeLine][1][relativeLine])
+                                    fasta_sequence.append(seqBatch[relativeLine][2][relativeLine])
+                                else:
+                                    logs_list.append(record.id)
             except urllib.error.HTTPError:
                 if urllib.error.HTTPError.code == 429:
                     time.sleep(5)
@@ -283,13 +297,30 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                 long_delay = 0
 
     if fasta_file is not None:
-        print("I was here! FASTA FILE :DANCE:")
+        fasta_file_ptr = open(fasta_file, "w")
+        for index in range(len(fasta_list)):
+            fasta_file_ptr.write("> " + str(fasta_list[index]) + "|" + str(fasta_feature[index]) + "\n" + str(fasta_sequence[index]) + "\n")
+        fasta_file_ptr.close()
 
     if tsv_file is not None:
-        print("I was here! TSV FILE :DANCE:")
+        tsv_file_ptr = open(tsv_file, "w")
+        max_row = ws.max_row
+        max_col = ws.max_column
+        for row in range(max_row):
+            for col in range(max_col):
+                text = ws.cell(row=row+1, column=col+1).value
+                if text is None:
+                    text = ""
+                tsv_file_ptr.write(text)
+                tsv_file_ptr.write("\t")
+            tsv_file_ptr.write("\n")
+        tsv_file_ptr.close()
 
     if log_file is not None:
-        print("I was here! LOG FILE :DANCE:")
+        log_file_ptr = open(log_file, "w")
+        for accessionID in logs_list:
+            log_file_ptr.write(accessionID + "\t" + "No Sequence Found!" + "\n")
+        log_file_ptr.close()
     # Save the Workbook that's been created in Memory!
     wb.save("genbankParsedData.xlsx")
 
