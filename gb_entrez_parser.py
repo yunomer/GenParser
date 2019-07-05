@@ -32,20 +32,22 @@ args = parser.parse_args()
 
 
 def fetch_sequence(feature, recognition_list, record, feature_list):
-    # TODO: Figure out if qualifiers are always present or not.
-    # NOTE: Add
-
-    qualifierKeys = feature.qualifiers.keys()
-    qualifierItems = feature.qualifiers.item()
-
-    for key, val in feature.qualifiers.items():
+    for val in feature.qualifiers.items():
         gene = []
         sequence = []
         for value in val:
+            if isinstance(value, list):
+                value = value[0]
             if value in recognition_list and (feature.type in feature_list):
-                gene.append(value)
-                sequence.append(feature.location.extract(record).seq)
+                try:
+                    gene.append(value)
+                    sequence.append(feature.location.extract(record).seq)
+                    return feature.type, gene, sequence
+                except KeyError:
+                    pass
         return feature.type, gene, sequence
+
+
 
 
 def fetch_match(header, record):
@@ -118,7 +120,6 @@ def grouper(iterable, n):
         yield iterable[i:i + n]
 
 
-# TODO: need to return string instead of list
 def listToString(candidate):
     # if isinstance(candidate, str):
     #     return candidate
@@ -225,7 +226,6 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                     # First get data to populate header fields
                     for header in header_list:
                         found = fetch_match(header, record)
-                        # print(header, found)
                         keyValues.append(found)
 
                     seqBatch = []
@@ -241,8 +241,6 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                     if numberRepeats == 0:
                         numberRepeats = 1
 
-                    print(seqBatch)
-                    exit(1)
                     # Next populate the fields
                     for relativeLine in range(numberRepeats):
                         workingRow = ws.max_row
@@ -255,8 +253,9 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                     extractValue = ", ".join(str(x) for x in extractValue)
                                 ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
                             else:
-                                ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][relativeLine]))
-                                ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqBatch[relativeLine][2][relativeLine]))
+                                if len(seqBatch) != 0:
+                                    ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][relativeLine]))
+                                    ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqBatch[relativeLine][2][relativeLine]))
 
                 wb.save("temp.xlsx")
 
