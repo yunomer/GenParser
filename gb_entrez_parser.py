@@ -245,6 +245,7 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
             try:
                 fetched_gb = Entrez.efetch(db="nucleotide", id=acc_list, rettype="gbwithparts", retmode="text")
                 for index, record in enumerate(SeqIO.parse(fetched_gb, "gb")):
+                    print("Processing: " + record.id)
                     keyValues = []
                     # First get data to populate header fields
                     for header in header_list:
@@ -259,15 +260,24 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                         if len(seqInfo[1]) != 0:
                             seqBatch.append(seqInfo)
 
+
                     numberRepeats = len(seqBatch)
 
                     if numberRepeats == 0:
                         numberRepeats = 1
+                    # else:
+                    #     print(seqBatch, len(seqBatch))
+                    #     for temp in range(len(seqBatch)):
+                    #         print(seqBatch[temp][1][0])
+                    #         print(seqBatch[temp][2][0])
+                    #         print(temp)
+                    #     exit(1)
+
 
                     # Next populate the fields
                     for relativeLine in range(numberRepeats):
                         workingRow = ws.max_row
-                        for indexHeader in range(len(keyValues) + numberRepeats):
+                        for indexHeader in range(len(keyValues) + 2):
                             if indexHeader < len(keyValues):
                                 extractValue = listToString(keyValues[indexHeader])
                                 if len(extractValue) == 0:
@@ -278,11 +288,19 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                             else:
                                 # If no sequences were found here. Add to logs list
                                 if len(seqBatch) != 0:
-                                    ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][relativeLine]))
-                                    ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqBatch[relativeLine][2][relativeLine]))
-                                    fasta_list.append(record.id)
-                                    fasta_feature.append(seqBatch[relativeLine][1][relativeLine])
-                                    fasta_sequence.append(seqBatch[relativeLine][2][relativeLine])
+                                    try:
+                                        ws.cell(row=workingRow+1, column = indexHeader, value=str(seqBatch[relativeLine][1][0]))
+                                        ws.cell(row=workingRow+1, column=indexHeader + 1, value=str(seqBatch[relativeLine][2][0]))
+                                        fasta_list.append(record.id)
+                                        fasta_feature.append(seqBatch[relativeLine][1][0])
+                                        fasta_sequence.append(seqBatch[relativeLine][2][0])
+                                    except Exception as e:
+                                        print(e)
+                                        print("Relative Line: " + str(relativeLine))
+                                        print("Number of Repeats: " + str(numberRepeats))
+                                        print(seqBatch[relativeLine][1][0])
+                                        print(seqBatch[relativeLine][2][0])
+                                        # exit(1)
                                 else:
                                     logs_list.append(record.id)
             except urllib.error.HTTPError:
