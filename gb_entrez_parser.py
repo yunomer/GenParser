@@ -28,6 +28,9 @@ parser.add_argument("--accessions", help="File Containing list of Accession IDs"
 parser.add_argument("--recognition", help="Custom Recognition List")
 parser.add_argument("--feature", help="Custom Feature List")
 parser.add_argument("--header", help="Custom Headers List and data to pull out")
+parser.add_argument('-f', action="store_true", help="Flag to produce Fasta file")
+parser.add_argument('-t', action="store_true", help="Flag to produce TSV file")
+parser.add_argument('-l', action="store_true", help="Flag to produce Logs file")
 args = parser.parse_args()
 
 
@@ -133,11 +136,11 @@ def listToString(candidate):
 
 def load_execute():
     """
-        Function that loads all user arguments from console and processes/assigns them to variables
-        setting up the environment for data execution
+    Function that loads all user arguments from console and processes/assigns them to variables
+    setting up the environment for data execution
 
-        To run the program, only the input file name is required. However other arguments can be input to add modularity
-        """
+    To run the program, only the input file name is required. However other arguments can be input to add modularity
+    """
     # If no arguments passed, exit
     if not len(sys.argv) > 1:
         print("Error: No Arguments passed")
@@ -175,9 +178,20 @@ def load_execute():
         header_list = config.default_head_list
 
     input_file_name_edit = str(os.path.basename(input_file_name).split(".")[0])
-    fasta_file = str("Result_" + input_file_name_edit + ".fasta")
-    tsv_file = str("tsv_" + input_file_name_edit + ".tsv")
-    log_file = str("log_" + input_file_name_edit + ".txt")
+    if args.f is True:
+        fasta_file = str("Result_" + input_file_name_edit + ".fasta")
+    else:
+        fasta_file = None
+
+    if args.t is True:
+        tsv_file = str("tsv_" + input_file_name_edit + ".tsv")
+    else:
+        tsv_file = None
+
+    if args.l is True:
+        log_file = str("log_" + input_file_name_edit + ".txt")
+    else:
+        log_file = None
 
     execute(input_file_name, fasta_file, tsv_file, log_file, header_list, feature_list, recognition_list)
 
@@ -195,6 +209,7 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
     :param recognition_list: Recognition "Hook" list                                - NOT REQUIRED UNLESS FEATURE LIST EXISTS
     :return: Nothing
     """
+
     # Count the number of Chunks processed
     counter = 0
     # delay counter for HTTP errors
@@ -256,9 +271,6 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                 if len(seqBatch) != 0:
                                     ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][relativeLine]))
                                     ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqBatch[relativeLine][2][relativeLine]))
-
-                wb.save("temp.xlsx")
-
             except urllib.error.HTTPError:
                 if urllib.error.HTTPError.code == 429:
                     time.sleep(5)
@@ -269,6 +281,17 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
             if long_delay == 20:
                 time.sleep(20)
                 long_delay = 0
+
+    if fasta_file is not None:
+        print("I was here! FASTA FILE :DANCE:")
+
+    if tsv_file is not None:
+        print("I was here! TSV FILE :DANCE:")
+
+    if log_file is not None:
+        print("I was here! LOG FILE :DANCE:")
+    # Save the Workbook that's been created in Memory!
+    wb.save("genbankParsedData.xlsx")
 
 
 if __name__ == '__main__':
