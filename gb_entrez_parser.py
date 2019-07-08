@@ -261,23 +261,15 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                             seqBatch.append(seqInfo)
 
 
-                    numberRepeats = len(seqBatch)
+                    numberRowsToPrint = len(seqBatch)
 
-                    if numberRepeats == 0:
-                        numberRepeats = 1
-                    # else:
-                    #     print(seqBatch, len(seqBatch))
-                    #     for temp in range(len(seqBatch)):
-                    #         print(seqBatch[temp][1][0])
-                    #         print(seqBatch[temp][2][0])
-                    #         print(temp)
-                    #     exit(1)
-
+                    if numberRowsToPrint == 0:
+                        numberRowsToPrint = 1
 
                     # Next populate the fields
-                    for relativeLine in range(numberRepeats):
+                    for relativeLine in range(numberRowsToPrint):
                         workingRow = ws.max_row
-                        for indexHeader in range(len(keyValues) + 2):
+                        for indexHeader in range(len(keyValues) + 1):
                             if indexHeader < len(keyValues):
                                 extractValue = listToString(keyValues[indexHeader])
                                 if len(extractValue) == 0:
@@ -289,15 +281,15 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                 # If no sequences were found here. Add to logs list
                                 if len(seqBatch) != 0:
                                     try:
-                                        ws.cell(row=workingRow+1, column = indexHeader, value=str(seqBatch[relativeLine][1][0]))
-                                        ws.cell(row=workingRow+1, column=indexHeader + 1, value=str(seqBatch[relativeLine][2][0]))
+                                        ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][0]))
+                                        ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqBatch[relativeLine][2][0]))
                                         fasta_list.append(record.id)
                                         fasta_feature.append(seqBatch[relativeLine][1][0])
                                         fasta_sequence.append(seqBatch[relativeLine][2][0])
                                     except Exception as e:
                                         print(e)
                                         print("Relative Line: " + str(relativeLine))
-                                        print("Number of Repeats: " + str(numberRepeats))
+                                        print("Number of Repeats: " + str(numberRowsToPrint))
                                         print(seqBatch[relativeLine][1][0])
                                         print(seqBatch[relativeLine][2][0])
                                         # exit(1)
