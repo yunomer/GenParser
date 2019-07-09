@@ -22,17 +22,35 @@ Doing so will produce a xlsx file called genbankParsedData. Which will contain p
 In the case above, no header list was provided and so it used a Generic Header list found in the config file. You can modify that
 list directly if you plan to use the same headers over and over again.
 
-To run the script with custom headers, you can simply add the flag and run:
+The Available Arguments that can be passed into the script are:
 ```sh
-    python3 gb_entrez_parser.py [ACCESSION LIST FILE] --header [HEADER FILE]
+    > Flags for Input Files:
+    --header        [HEADER LIST FILE]
+    --feature       [FEATURE LIST FILE]
+    --recognition   [RECOGNITION LIST FILE]
+    
+    > Flags:
+    -f              Produce a Fasta file for all sequences found
+    -t              Convert and produce a TSV file of xlsx file produced
+    -l              Produce a logs file containing all Accession IDs with no sequences
 ```
 
+The main purpose of this script is to extract sequences related to Features in the Genbank files. 
+To address that, currently users have to identify the sequence location in the Genbank file (Feature), and then adding a "Hook" or key to look for.
+An example is provided in the config file (features.txt, recognition.txt).
+
+In In the example, we see that the features list contains the name of the feature to look in (i.e CDS, Gene). The script requires the Feature to contain a "Hook" to latch onto and extract the sequence if present. The recognition hook can be either a key (Text before the '=') or the value (Text after the '=').
+If no custom Recognition list or Feature list is provided, a default one is utilized, that can be modified in the config file.
+However if you would like to use a custom Recognition and Feature list to identify specific sequences you can simply run the script using flags above:
+```sh
+    python3 gb_entrez_parser.py [ACCESSION LIST FILE] --feature [FEATURE FILE] -- recognition [RECOGNITION FILE]
+```
+
+To produce Fasta file, log file or TSV file simply add the flags at the end. 
     
 
 ## Author
-👤 **Omer Ashfaq**
-
-* Github: [@yunomer](https://github.com/yunomer)
+👤 [@yunomer](https://github.com/yunomer)
 
 ## Show your support
 
