@@ -1,0 +1,7 @@
+argparse
+biopython
+fuzzywuzzy
+openpyxl
+pyparsing
+requests
+urllib

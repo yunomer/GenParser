@@ -1,14 +1,14 @@
 import sys
 import os
 import time
-from config import config
+import codecs
 
 try:
     import argparse
     import urllib.error
-    import codecs
     from Bio import SeqIO
     from Bio import Entrez
+    from config import config
     from fuzzywuzzy import fuzz
     from fuzzywuzzy import process
     from openpyxl import Workbook

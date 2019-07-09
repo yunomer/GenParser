@@ -7,9 +7,9 @@
 ### 🏠 [Homepage](https://github.com/yunomer/GenParser)
 
 ## 🚀 Usage
+    
 
 ## Author
-
 👤 **Omer Ashfaq**
 
 * Github: [@yunomer](https://github.com/yunomer)
