@@ -7,6 +7,12 @@
 ### 🏠 [Homepage](https://github.com/yunomer/GenParser)
 
 ## 🚀 Usage
+   Make sure you have Python 3.x installed and pip version >= 9.0.1
+   
+   First run the following command at the root of your project:
+   ```sh
+    pip3 install -r requirements.txt
+    ```
     
 
 ## Author
