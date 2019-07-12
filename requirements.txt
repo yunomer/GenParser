@@ -4,4 +4,3 @@ fuzzywuzzy
 openpyxl
 pyparsing
 requests
-urllib
