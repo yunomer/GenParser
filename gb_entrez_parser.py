@@ -51,8 +51,6 @@ def fetch_sequence(feature, recognition_list, record, feature_list):
         return feature.type, gene, sequence
 
 
-
-
 def fetch_match(header, record):
     """
     Function to try to retrieve an annotation from a SeqRecord object, return empty string if not found
