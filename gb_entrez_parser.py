@@ -260,8 +260,16 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                         if len(seqInfo[1]) != 0:
                             seqBatch.append(seqInfo)
 
-
                     numberRowsToPrint = len(seqBatch)
+
+                    if numberRowsToPrint >= 1:
+                        # Check and see if the sequence are unique
+                        for x in range (numberRowsToPrint):
+                            for y in range (1, numberRowsToPrint):
+                                if (seqBatch[x][2][0] == seqBatch[y][2][0]):
+                                    # print("Sequence Already Exists: " + str(seqBatch[y]))
+                                    del seqBatch[y]
+                                    numberRowsToPrint = len(seqBatch)
 
                     if numberRowsToPrint == 0:
                         numberRowsToPrint = 1
