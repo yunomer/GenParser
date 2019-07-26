@@ -295,14 +295,12 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                         fasta_feature.append(seqBatch[relativeLine][1][0])
                                         fasta_sequence.append(seqBatch[relativeLine][3][0])
                                         fasta_sequence.append(seqBatch[relativeLine][2][0])
-                                        # print(seqBatch[relativeLine][3][0])
                                     except Exception as e:
                                         print(e)
                                         print("Relative Line: " + str(relativeLine))
                                         print("Number of Repeats: " + str(numberRowsToPrint))
                                         print(seqBatch[relativeLine][1][0])
                                         print(seqBatch[relativeLine][2][0])
-                                        # exit(1)
                                 else:
                                     logs_list.append(record.id)
             except urllib.error.HTTPError:
