@@ -260,18 +260,21 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
 
                     numberRowsToPrint = len(seqBatch)
 
-                    if numberRowsToPrint >= 1:
-                        # Check and see if the sequence are unique
-                        for x in range (numberRowsToPrint):
-                            for y in range (1, numberRowsToPrint):
-                                if (seqBatch[x][2][0] == seqBatch[y][2][0]):
-                                    # print("Sequence Already Exists: " + str(seqBatch[y]))
-                                    del seqBatch[y]
-                                    numberRowsToPrint = len(seqBatch)
+                    if numberRowsToPrint > 1:
+                        # Remove Duplicates
+                        visited = set()
+                        Output = []
+                        for feature, gene, sequence in seqBatch:
+                            if not sequence[0] in visited:
+                                visited.add(sequence[0])
+                                Output.append((feature, gene, sequence))
+                        seqBatch = Output
+                        numberRowsToPrint = len(seqBatch)
 
                     if numberRowsToPrint == 0:
                         numberRowsToPrint = 1
 
+                    # print(seqBatch)
                     # Next populate the fields
                     for relativeLine in range(numberRowsToPrint):
                         workingRow = ws.max_row
