@@ -35,20 +35,25 @@ args = parser.parse_args()
 
 
 def fetch_sequence(feature, recognition_list, record, feature_list):
+    # print(feature.qualifiers.items())
     for val in feature.qualifiers.items():
         gene = []
         sequence = []
+        valuePair = []
         for value in val:
+            # print(val, value)
             if isinstance(value, list):
                 value = value[0]
+            valuePair.append(val[1][0])
+
             if value in recognition_list and (feature.type in feature_list):
                 try:
                     gene.append(value)
                     sequence.append(feature.location.extract(record).seq)
-                    return feature.type, gene, sequence
+                    return feature.type, gene, sequence, valuePair
                 except KeyError:
                     pass
-        return feature.type, gene, sequence
+        return feature.type, gene, sequence, valuePair
 
 
 def fetch_match(header, record):
@@ -112,8 +117,7 @@ def check_standard_input_files(stdin_file, stdin_list):
         except FileNotFoundError:
             print("Error: File was not found: " + stdin_file)
             exit(1)
-    else:
-        return 1
+    else:        return 1
 
 
 def grouper(iterable, n):
@@ -122,13 +126,6 @@ def grouper(iterable, n):
 
 
 def listToString(candidate):
-    # if isinstance(candidate, str):
-    #     return candidate
-    # if isinstance(candidate, list):
-    #     if len(candidate) is 0:
-    #         listToString(" ")
-    #     else:
-    #         listToString(candidate[0])
     return sum(([candidate] if not isinstance(candidate, list) else listToString(candidate) for candidate in candidate), [])
 
 
@@ -230,8 +227,9 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
         ws.cell(row=1, column=index+1, value=header)
 
     numberHeaders = len(header_list)
-    ws.cell(row=1, column=numberHeaders+1, value="gene")
-    ws.cell(row=1, column=numberHeaders + 2, value="sequence")
+    ws.cell(row=1, column=numberHeaders+1, value="Recognition List")
+    ws.cell(row=1, column=numberHeaders + 2, value="Value")
+    ws.cell(row=1, column=numberHeaders + 3, value="sequence")
 
     with codecs.open(input_file_name, 'r') as infile:
         chunks = grouper(infile.read().split("\n"), 300)
@@ -264,10 +262,10 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                         # Remove Duplicates
                         visited = set()
                         Output = []
-                        for feature, gene, sequence in seqBatch:
+                        for feature, gene, sequence, valueKey in seqBatch:
                             if not sequence[0] in visited:
                                 visited.add(sequence[0])
-                                Output.append((feature, gene, sequence))
+                                Output.append((feature, gene, sequence, valueKey))
                         seqBatch = Output
                         numberRowsToPrint = len(seqBatch)
 
@@ -291,10 +289,13 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                 if len(seqBatch) != 0:
                                     try:
                                         ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][0]))
-                                        ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqBatch[relativeLine][2][0]))
+                                        ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqBatch[relativeLine][3][0]))
+                                        ws.cell(row=workingRow + 1, column=indexHeader + 3, value=str(seqBatch[relativeLine][2][0]))
                                         fasta_list.append(record.id)
                                         fasta_feature.append(seqBatch[relativeLine][1][0])
+                                        fasta_sequence.append(seqBatch[relativeLine][3][0])
                                         fasta_sequence.append(seqBatch[relativeLine][2][0])
+                                        # print(seqBatch[relativeLine][3][0])
                                     except Exception as e:
                                         print(e)
                                         print("Relative Line: " + str(relativeLine))
