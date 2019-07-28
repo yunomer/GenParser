@@ -35,25 +35,38 @@ args = parser.parse_args()
 
 
 def fetch_sequence(feature, recognition_list, record, feature_list):
-    # print(feature.qualifiers.items())
     for val in feature.qualifiers.items():
         gene = []
         sequence = []
-        valuePair = []
+        location = []
+        qualifiers = []
+        pseudo = []
         for value in val:
-            # print(val, value)
             if isinstance(value, list):
                 value = value[0]
-            valuePair.append(val[1][0])
 
             if value in recognition_list and (feature.type in feature_list):
                 try:
                     gene.append(value)
                     sequence.append(feature.location.extract(record).seq)
-                    return feature.type, gene, sequence, valuePair
+                    location.append(feature.location)
+
+                    for qualifier in feature.qualifiers.items():
+                        key = qualifier[0]
+                        value = qualifier[1]
+                        if isinstance(value, list):
+                            value = qualifier[1][0]
+                        qualifier_string = str(key) + ": " + str(value)
+                        qualifiers.append(qualifier_string)
+
+                    for item in feature.qualifiers:
+                        matchRatio = fuzz.ratio(item, "pseudo")
+                        if matchRatio > 80:
+                            pseudo.append(item)
+                    return feature.type, gene, qualifiers, location, sequence, pseudo
                 except KeyError:
                     pass
-        return feature.type, gene, sequence, valuePair
+        return feature.type, gene, qualifiers, location, sequence, pseudo
 
 
 def fetch_match(header, record):
@@ -67,23 +80,30 @@ def fetch_match(header, record):
     output = []
     # Try and see if the header can be found in the root of the object record
     try:
-        unPackKeys = [*record]
-        for key in unPackKeys:
-            matchRatio = fuzz.ratio(header, key)
-            if matchRatio > 90:
-                output.append(record.key)
+        methods = dir(record)
+        for method in methods:
+            matchRatio = fuzz.ratio(header, method)
+            if matchRatio > 70:
+                method_called = getattr(record, method)
+                output.append(method_called)
         if len(output) != 0:
             return output
         pass
     except KeyError:
         pass
-    # If it header doesn't exist in the root of the object, try it's annotations section
     try:
         unPackKeys = [*record.annotations]
         for key in unPackKeys:
+            # print(header, key)
             matchRatio = fuzz.ratio(header, key)
-            if matchRatio > 90:
+            if matchRatio > 70:
                 output.append(record.annotations[key])
+            else:
+                if isinstance(record.annotations[key], list):
+                    for item in record.annotations[key]:
+                        matchRatio = fuzz.ratio(header, key)
+                        if matchRatio > 70:
+                            output.append(item)
         if len(output) != 0:
             return output
         pass
@@ -97,8 +117,9 @@ def fetch_match(header, record):
                 unPackKeys = [*feature_dict.qualifiers]
                 for key in unPackKeys:
                     matchRatio = fuzz.ratio(header, key)
-                    if matchRatio > 90:
+                    if matchRatio > 70:
                         output.append(feature_dict.qualifiers[key])
+                        # print(header, key)
             except KeyError:
                 pass
         return output
@@ -117,7 +138,8 @@ def check_standard_input_files(stdin_file, stdin_list):
         except FileNotFoundError:
             print("Error: File was not found: " + stdin_file)
             exit(1)
-    else:        return 1
+    else:
+        return 1
 
 
 def grouper(iterable, n):
@@ -227,9 +249,12 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
         ws.cell(row=1, column=index+1, value=header)
 
     numberHeaders = len(header_list)
-    ws.cell(row=1, column=numberHeaders+1, value="Recognition List")
-    ws.cell(row=1, column=numberHeaders + 2, value="Value")
-    ws.cell(row=1, column=numberHeaders + 3, value="sequence")
+    # feature.type, gene, qualifiers, location, sequence, pseudo
+    ws.cell(row=1, column=numberHeaders + 1, value="Recognition List")
+    ws.cell(row=1, column=numberHeaders + 2, value="Qualifiers")
+    ws.cell(row=1, column=numberHeaders + 3, value="Location")
+    ws.cell(row=1, column=numberHeaders + 4, value="sequence")
+    ws.cell(row=1, column=numberHeaders + 5, value="Pseudo")
 
     with codecs.open(input_file_name, 'r') as infile:
         chunks = grouper(infile.read().split("\n"), 300)
@@ -258,16 +283,17 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
 
                     numberRowsToPrint = len(seqBatch)
 
-                    if numberRowsToPrint > 1:
-                        # Remove Duplicates
-                        visited = set()
-                        Output = []
-                        for feature, gene, sequence, valueKey in seqBatch:
-                            if not sequence[0] in visited:
-                                visited.add(sequence[0])
-                                Output.append((feature, gene, sequence, valueKey))
-                        seqBatch = Output
-                        numberRowsToPrint = len(seqBatch)
+                    # TODO: Patch Remove Duplicates process
+                    # if numberRowsToPrint > 1:
+                    #     # Remove Duplicates
+                    #     visited = set()
+                    #     Output = []
+                    #     for feature, gene, sequence, valueKey in seqBatch:
+                    #         if not sequence[0] in visited:
+                    #             visited.add(sequence[0])
+                    #             Output.append((feature, gene, sequence, valueKey))
+                    #     seqBatch = Output
+                    #     numberRowsToPrint = len(seqBatch)
 
                     if numberRowsToPrint == 0:
                         numberRowsToPrint = 1
@@ -288,19 +314,32 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                 # If no sequences were found here. Add to logs list
                                 if len(seqBatch) != 0:
                                     try:
+                                        # Recognition
                                         ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][0]))
-                                        ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(seqBatch[relativeLine][3][0]))
-                                        ws.cell(row=workingRow + 1, column=indexHeader + 3, value=str(seqBatch[relativeLine][2][0]))
+                                        # Qualifiers found
+                                        join_string = ", ".join(str(x) for x in seqBatch[relativeLine][2])
+                                        ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(join_string))
+                                        # Location
+                                        ws.cell(row=workingRow + 1, column=indexHeader + 3, value=str(seqBatch[relativeLine][3][0]))
+                                        # Sequence
+                                        ws.cell(row=workingRow + 1, column=indexHeader + 4, value=str(seqBatch[relativeLine][4][0]))
+                                        # IsPseudo
+                                        if len(seqBatch[relativeLine][5]) == 0:
+                                            ws.cell(row=workingRow + 1, column=indexHeader + 5, value="")
+                                        else:
+                                            ws.cell(row=workingRow + 1, column=indexHeader + 5,value=str(seqBatch[relativeLine][5][0]))
+
                                         fasta_list.append(record.id)
                                         fasta_feature.append(seqBatch[relativeLine][1][0])
+                                        fasta_sequence.append(seqBatch[relativeLine][2])
                                         fasta_sequence.append(seqBatch[relativeLine][3][0])
-                                        fasta_sequence.append(seqBatch[relativeLine][2][0])
+                                        fasta_sequence.append(seqBatch[relativeLine][4][0])
+                                        fasta_sequence.append(seqBatch[relativeLine][5])
                                     except Exception as e:
                                         print(e)
                                         print("Relative Line: " + str(relativeLine))
                                         print("Number of Repeats: " + str(numberRowsToPrint))
-                                        print(seqBatch[relativeLine][1][0])
-                                        print(seqBatch[relativeLine][2][0])
+                                        exit(1)
                                 else:
                                     logs_list.append(record.id)
             except urllib.error.HTTPError:

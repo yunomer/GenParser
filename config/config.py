@@ -19,7 +19,14 @@ default_rec_list = [
 ]
 
 default_head_list = [
+    "Description",
     "accession",
+    "name",
+    "Keywords",
+    "Reference",
+    "Authors",
+    "Title",
+    "Journal",
     "collected_by",
     "collection_date",
     "gene",
