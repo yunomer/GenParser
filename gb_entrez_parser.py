@@ -309,7 +309,7 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                     extractValue = " "
                                 else:
                                     extractValue = ", ".join(str(x) for x in extractValue)
-                                ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
+                                    ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
                             else:
                                 # If no sequences were found here. Add to logs list
                                 if len(seqBatch) != 0:
@@ -353,6 +353,21 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                 time.sleep(20)
                 long_delay = 0
 
+    # Revisit the headers to find lat_lon
+    for index, header in enumerate(header_list):
+        if header == 'lat_lon':
+            ws.insert_cols(index + 2)   # Lat
+            ws.insert_cols(index + 3)   # Lon
+            ws.cell(row=1, column=index + 2, value="Lat")
+            ws.cell(row=1, column=index + 3, value="Lon")
+            for row in range(2, ws.max_row+1):
+                lat_lon = ws.cell(row=row, column=index+1).value
+                lat_lon = lat_lon.split(" ")
+                lat = lat_lon[0] + " " + lat_lon[1]
+                lon = lat_lon[2] + " " + lat_lon[3]
+                ws.cell(row=row, column=index + 2, value= lat)
+                ws.cell(row=row, column=index + 3, value=lon)
+
     if fasta_file is not None:
         fasta_file_ptr = open(fasta_file, "w")
         for index in range(len(fasta_list)):
@@ -378,6 +393,7 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
         for accessionID in logs_list:
             log_file_ptr.write(accessionID + "\t" + "No Sequence Found!" + "\n")
         log_file_ptr.close()
+
     # Save the Workbook that's been created in Memory!
     wb.save("genbankParsedData.xlsx")
 
