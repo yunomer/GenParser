@@ -94,16 +94,13 @@ def fetch_match(header, record):
     try:
         unPackKeys = [*record.annotations]
         for key in unPackKeys:
-            # print(header, key)
             matchRatio = fuzz.ratio(header, key)
             if matchRatio > 70:
-                output.append(record.annotations[key])
-            else:
                 if isinstance(record.annotations[key], list):
                     for item in record.annotations[key]:
-                        matchRatio = fuzz.ratio(header, key)
-                        if matchRatio > 70:
-                            output.append(item)
+                        string = str(item).rstrip().replace('\n', '| ')
+                        # print("|" + string + "|")
+                        output.append(string)
         if len(output) != 0:
             return output
         pass
@@ -119,7 +116,6 @@ def fetch_match(header, record):
                     matchRatio = fuzz.ratio(header, key)
                     if matchRatio > 70:
                         output.append(feature_dict.qualifiers[key])
-                        # print(header, key)
             except KeyError:
                 pass
         return output
@@ -331,10 +327,7 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
 
                                         fasta_list.append(record.id)
                                         fasta_feature.append(seqBatch[relativeLine][1][0])
-                                        fasta_sequence.append(seqBatch[relativeLine][2])
-                                        fasta_sequence.append(seqBatch[relativeLine][3][0])
                                         fasta_sequence.append(seqBatch[relativeLine][4][0])
-                                        fasta_sequence.append(seqBatch[relativeLine][5])
                                     except Exception as e:
                                         print(e)
                                         print("Relative Line: " + str(relativeLine))
@@ -378,11 +371,11 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
         tsv_file_ptr = open(tsv_file, "w")
         max_row = ws.max_row
         max_col = ws.max_column
-        for row in range(max_row):
-            for col in range(max_col):
-                text = ws.cell(row=row+1, column=col+1).value
+        for row in range(1, max_row + 1):
+            for col in range(1, max_col + 1):
+                text = ws.cell(row=row, column=col).value
                 if text is None:
-                    text = ""
+                    text = " "
                 tsv_file_ptr.write(text)
                 tsv_file_ptr.write("\t")
             tsv_file_ptr.write("\n")

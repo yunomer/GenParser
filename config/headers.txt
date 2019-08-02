@@ -1,0 +1,11 @@
+accession
+Reference
+collected_by
+collection_date
+gene
+organism
+sequence
+taxonomy
+notes
+country
+isolate
