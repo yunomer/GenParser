@@ -83,7 +83,7 @@ def fetch_match(header, record):
         methods = dir(record)
         for method in methods:
             matchRatio = fuzz.ratio(header, method)
-            if matchRatio > 70:
+            if matchRatio > 90:
                 method_called = getattr(record, method)
                 output.append(method_called)
         if len(output) != 0:
@@ -95,7 +95,7 @@ def fetch_match(header, record):
         unPackKeys = [*record.annotations]
         for key in unPackKeys:
             matchRatio = fuzz.ratio(header, key)
-            if matchRatio > 70:
+            if matchRatio > 90:
                 if isinstance(record.annotations[key], list):
                     for item in record.annotations[key]:
                         string = str(item).rstrip().replace('\n', '| ')
@@ -114,7 +114,7 @@ def fetch_match(header, record):
                 unPackKeys = [*feature_dict.qualifiers]
                 for key in unPackKeys:
                     matchRatio = fuzz.ratio(header, key)
-                    if matchRatio > 70:
+                    if matchRatio > 90:
                         output.append(feature_dict.qualifiers[key])
             except KeyError:
                 pass
