@@ -355,11 +355,15 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
             ws.cell(row=1, column=index + 3, value="Lon")
             for row in range(2, ws.max_row+1):
                 lat_lon = ws.cell(row=row, column=index+1).value
-                lat_lon = lat_lon.split(" ")
-                lat = lat_lon[0] + " " + lat_lon[1]
-                lon = lat_lon[2] + " " + lat_lon[3]
-                ws.cell(row=row, column=index + 2, value= lat)
-                ws.cell(row=row, column=index + 3, value=lon)
+                if lat_lon is not None:
+                    lat_lon = lat_lon.split(" ")
+                    lat = lat_lon[0] + " " + lat_lon[1]
+                    lon = lat_lon[2] + " " + lat_lon[3]
+                    ws.cell(row=row, column=index + 2, value= lat)
+                    ws.cell(row=row, column=index + 3, value=lon)
+                else:
+                    ws.cell(row=row, column=index + 2, value="")
+                    ws.cell(row=row, column=index + 3, value="")
 
     if fasta_file is not None:
         fasta_file_ptr = open(fasta_file, "w")
