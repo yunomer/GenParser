@@ -256,7 +256,6 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
         chunks = grouper(infile.read().split("\n"), 300)
         for chunk in chunks:
             counter += 1
-            print("Processed Group : " + str(counter))
             while "" in chunk:
                 chunk.remove('')
             acc_list = ",".join(chunk)
@@ -268,7 +267,8 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                 try:
                     fetched_gb = Entrez.efetch(db="nucleotide", id=acc_list, rettype="gbwithparts", retmode="text")
                     for index, record in enumerate(SeqIO.parse(fetched_gb, "gb")):
-                        # print("\tProcessing: " + record.id)
+                        suffix = "Processing Set: " + str(counter) + ", ID: " + record.id
+                        progress(index+1, 300, suffix)
                         keyValues = []
                         # First get data to populate header fields
                         for header in header_list:
@@ -412,6 +412,17 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
 
     # Save the Workbook that's been created in Memory!
     wb.save("genbankParsedData.xlsx")
+
+
+def progress(count, total, suffix=''):
+    bar_len = 60
+    filled_len = int(round(bar_len * count / float(total)))
+
+    percents = round(100.0 * count / float(total), 1)
+    bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+    sys.stdout.write('[%s] %s%s ... %s\r' % (bar, percents, '%', suffix))
+    sys.stdout.flush()
 
 
 if __name__ == '__main__':
