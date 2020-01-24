@@ -255,95 +255,106 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
     with codecs.open(input_file_name, 'r') as infile:
         chunks = grouper(infile.read().split("\n"), 300)
         for chunk in chunks:
-            print("Processed " + str(counter) + " records...")
+            counter += 1
+            print("Processed Group : " + str(counter))
             while "" in chunk:
                 chunk.remove('')
             acc_list = ",".join(chunk)
-            try:
-                fetched_gb = Entrez.efetch(db="nucleotide", id=acc_list, rettype="gbwithparts", retmode="text")
-                for index, record in enumerate(SeqIO.parse(fetched_gb, "gb")):
-                    print("Processing: " + record.id)
-                    keyValues = []
-                    # First get data to populate header fields
-                    for header in header_list:
-                        found = fetch_match(header, record)
-                        keyValues.append(found)
 
-                    seqBatch = []
-                    # Fetch the sequence data
-                    for feature in record.features:
-                        seqInfo = fetch_sequence(feature, recognition_list, record, feature_list)
-                        # If no sequence exists don't append to the list
-                        if len(seqInfo[1]) != 0:
-                            seqBatch.append(seqInfo)
+            # Number of attempts to retry the try statement
+            attempts = 0
 
-                    numberRowsToPrint = len(seqBatch)
+            while attempts < 4:
+                try:
+                    fetched_gb = Entrez.efetch(db="nucleotide", id=acc_list, rettype="gbwithparts", retmode="text")
+                    for index, record in enumerate(SeqIO.parse(fetched_gb, "gb")):
+                        # print("\tProcessing: " + record.id)
+                        keyValues = []
+                        # First get data to populate header fields
+                        for header in header_list:
+                            found = fetch_match(header, record)
+                            keyValues.append(found)
 
-                    # TODO: Patch Remove Duplicates process
-                    # if numberRowsToPrint > 1:
-                    #     # Remove Duplicates
-                    #     visited = set()
-                    #     Output = []
-                    #     for feature, gene, sequence, valueKey in seqBatch:
-                    #         if not sequence[0] in visited:
-                    #             visited.add(sequence[0])
-                    #             Output.append((feature, gene, sequence, valueKey))
-                    #     seqBatch = Output
-                    #     numberRowsToPrint = len(seqBatch)
+                        seqBatch = []
+                        # Fetch the sequence data
+                        for feature in record.features:
+                            seqInfo = fetch_sequence(feature, recognition_list, record, feature_list)
+                            # If no sequence exists don't append to the list
+                            # print(seqInfo)
+                            try:
+                                if len(seqInfo[1]) != 0:
+                                    seqBatch.append(seqInfo)
+                            except:
+                                pass
 
-                    if numberRowsToPrint == 0:
-                        numberRowsToPrint = 1
+                        numberRowsToPrint = len(seqBatch)
 
-                    # print(seqBatch)
-                    # Next populate the fields
-                    for relativeLine in range(numberRowsToPrint):
-                        workingRow = ws.max_row
-                        for indexHeader in range(len(keyValues) + 1):
-                            if indexHeader < len(keyValues):
-                                extractValue = listToString(keyValues[indexHeader])
-                                if len(extractValue) == 0:
-                                    extractValue = " "
+                        # TODO: Patch Remove Duplicates process
+                        # if numberRowsToPrint > 1:
+                        #     # Remove Duplicates
+                        #     visited = set()
+                        #     Output = []
+                        #     for one in seqBatch:
+                        #         print(one)
+                        #         if not sequence[0] in visited:
+                        #             visited.add(sequence[0])
+                        #             Output.append((feature, gene, sequence, valueKey))
+                        #     seqBatch = Output
+                        #     numberRowsToPrint = len(seqBatch)
+
+                        if numberRowsToPrint == 0:
+                            numberRowsToPrint = 1
+
+                        # Next populate the fields
+                        for relativeLine in range(numberRowsToPrint):
+                            workingRow = ws.max_row
+                            for indexHeader in range(len(keyValues) + 1):
+                                if indexHeader < len(keyValues):
+                                    extractValue = listToString(keyValues[indexHeader])
+                                    if len(extractValue) == 0:
+                                        extractValue = " "
+                                    else:
+                                        extractValue = ", ".join(str(x) for x in extractValue)
+                                        ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
                                 else:
-                                    extractValue = ", ".join(str(x) for x in extractValue)
-                                    ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
-                            else:
-                                # If no sequences were found here. Add to logs list
-                                if len(seqBatch) != 0:
-                                    try:
-                                        # Recognition
-                                        ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][0]))
-                                        # Qualifiers found
-                                        join_string = ", ".join(str(x) for x in seqBatch[relativeLine][2])
-                                        ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(join_string))
-                                        # Location
-                                        ws.cell(row=workingRow + 1, column=indexHeader + 3, value=str(seqBatch[relativeLine][3][0]))
-                                        # Sequence
-                                        ws.cell(row=workingRow + 1, column=indexHeader + 4, value=str(seqBatch[relativeLine][4][0]))
-                                        # IsPseudo
-                                        if len(seqBatch[relativeLine][5]) == 0:
-                                            ws.cell(row=workingRow + 1, column=indexHeader + 5, value="")
-                                        else:
-                                            ws.cell(row=workingRow + 1, column=indexHeader + 5,value=str(seqBatch[relativeLine][5][0]))
+                                    # If no sequences were found here. Add to logs list
+                                    if len(seqBatch) != 0:
+                                        try:
+                                            # Recognition
+                                            ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][0]))
+                                            # Qualifiers found
+                                            join_string = ", ".join(str(x) for x in seqBatch[relativeLine][2])
+                                            ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(join_string))
+                                            # Location
+                                            ws.cell(row=workingRow + 1, column=indexHeader + 3, value=str(seqBatch[relativeLine][3][0]))
+                                            # Sequence
+                                            ws.cell(row=workingRow + 1, column=indexHeader + 4, value=str(seqBatch[relativeLine][4][0]))
+                                            # IsPseudo
+                                            if len(seqBatch[relativeLine][5]) == 0:
+                                                ws.cell(row=workingRow + 1, column=indexHeader + 5, value="")
+                                            else:
+                                                ws.cell(row=workingRow + 1, column=indexHeader + 5,value=str(seqBatch[relativeLine][5][0]))
 
-                                        fasta_list.append(record.id)
-                                        fasta_feature.append(seqBatch[relativeLine][1][0])
-                                        fasta_sequence.append(seqBatch[relativeLine][4][0])
-                                    except Exception as e:
-                                        print(e)
-                                        print("Relative Line: " + str(relativeLine))
-                                        print("Number of Repeats: " + str(numberRowsToPrint))
-                                        exit(1)
-                                else:
-                                    logs_list.append(record.id)
-            except urllib.error.HTTPError:
-                if urllib.error.HTTPError.code == 429:
-                    time.sleep(5)
-                    pass
-                else:
-                    a = False
+                                            fasta_list.append(record.id)
+                                            fasta_feature.append(seqBatch[relativeLine][1][0])
+                                            fasta_sequence.append(seqBatch[relativeLine][4][0])
+                                        except Exception as e:
+                                            print(e)
+                                            print("Relative Line: " + str(relativeLine))
+                                            print("Number of Repeats: " + str(numberRowsToPrint))
+                                            exit(1)
+                                    else:
+                                        logs_list.append(record.id)
+                    break
+                except Exception as ex:
+                    print(ex)
+                    print("sleeping for 10 seconds")
+                    time.sleep(10)
+                    attempts += 1
             long_delay = long_delay + 1
             if long_delay == 20:
-                time.sleep(20)
+                print("sleeping for 2 minutes")
+                time.sleep(120)
                 long_delay = 0
 
     # Revisit the headers to find lat_lon
@@ -357,8 +368,16 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                 lat_lon = ws.cell(row=row, column=index+1).value
                 if lat_lon is not None:
                     lat_lon = lat_lon.split(" ")
-                    lat = lat_lon[0] + " " + lat_lon[1]
-                    lon = lat_lon[2] + " " + lat_lon[3]
+                    if lat_lon[1] == 'S':
+                        lat = "-" + lat_lon[0]
+                    else:
+                        lat = lat_lon[0]
+                    if lat_lon[3] == 'W':
+                        lon = "-" + lat_lon[2]
+                    else:
+                        lon = lat_lon[2]
+                    # lat = lat_lon[0] + " " + lat_lon[1] # N, S
+                    # lon = lat_lon[2] + " " + lat_lon[3] # E, W
                     ws.cell(row=row, column=index + 2, value= lat)
                     ws.cell(row=row, column=index + 3, value=lon)
                 else:
