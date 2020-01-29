@@ -288,19 +288,6 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                 pass
 
                         numberRowsToPrint = len(seqBatch)
-                        # print(numberRowsToPrint)
-                        # TODO: Patch Remove Duplicates process
-                        # if numberRowsToPrint > 1:
-                        #     # Remove Duplicates
-                        #     visited = set()
-                        #     Output = []
-                        #     for one in seqBatch:
-                        #         print(one)
-                        #         if not sequence[0] in visited:
-                        #             visited.add(sequence[0])
-                        #             Output.append((feature, gene, sequence, valueKey))
-                        #     seqBatch = Output
-                        #     numberRowsToPrint = len(seqBatch)
 
                         if numberRowsToPrint == 0:
                             numberRowsToPrint = 1
@@ -316,7 +303,6 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                     else:
                                         extractValue = ", ".join(str(x) for x in extractValue)
                                         ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
-                                        print(extractValue)
                                 else:
                                     # If no sequences were found here. Add to logs list
                                     if len(seqBatch) != 0:
