@@ -253,85 +253,25 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
     ws.cell(row=1, column=numberHeaders + 5, value="Pseudo")
 
     with codecs.open(input_file_name, 'r') as infile:
-        chunks = grouper(infile.read().split("\n"), 300)
+        file = infile.read().split("\n")
+        chunks = grouper(file, 300)
         for chunk in chunks:
             counter += 1
             while "" in chunk:
                 chunk.remove('')
-            acc_list = ",".join(chunk)
-
+            accession_string = ",".join(chunk)
+            accession_list = accession_string.split(",")
             # Number of attempts to retry the try statement
             attempts = 0
                     
             while attempts <= 3:
                 try:
-                    fetched_gb = Entrez.efetch(db="nucleotide", id=acc_list, rettype="gbwithparts", retmode="text")
+                    # Fetch the gb files for the Chunch defined
+                    fetched_gb = Entrez.efetch(db="nucleotide", id=accession_string, rettype="gbwithparts", retmode="text")
                     for index, record in enumerate(SeqIO.parse(fetched_gb, "gb")):
                         suffix = "Processing Set: " + str(counter) + ", ID: " + record.id
-                        # progress(index+1, 300, suffix)
-                        keyValues = []
-                        # First get data to populate header fields
-                        for header in header_list:
-                            found = fetch_match(header, record)
-                            keyValues.append(found)
-
-                        seqBatch = []
-                        # Fetch the sequence data
-                        for feature in record.features:
-                            seqInfo = fetch_sequence(feature, recognition_list, record, feature_list)
-                            # If no sequence exists don't append to the list
-                            # print(seqInfo)
-                            try:
-                                if len(seqInfo[1]) != 0:
-                                    seqBatch.append(seqInfo)
-                            except:
-                                pass
-
-                        numberRowsToPrint = len(seqBatch)
-
-                        if numberRowsToPrint == 0:
-                            numberRowsToPrint = 1
-
-                        # Next populate the fields
-                        for relativeLine in range(numberRowsToPrint):
-                            workingRow = ws.max_row
-                            for indexHeader in range(len(keyValues) + 1):
-                                if indexHeader < len(keyValues):
-                                    extractValue = listToString(keyValues[indexHeader])
-                                    if len(extractValue) == 0:
-                                        extractValue = " "
-                                    else:
-                                        extractValue = ", ".join(str(x) for x in extractValue)
-                                        ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
-                                else:
-                                    # If no sequences were found here. Add to logs list
-                                    if len(seqBatch) != 0:
-                                        try:
-                                            # Recognition
-                                            ws.cell(row=workingRow+1, column = indexHeader + 1, value=str(seqBatch[relativeLine][1][0]))
-                                            # Qualifiers found
-                                            join_string = ", ".join(str(x) for x in seqBatch[relativeLine][2])
-                                            ws.cell(row=workingRow+1, column=indexHeader + 2, value=str(join_string))
-                                            # Location
-                                            ws.cell(row=workingRow + 1, column=indexHeader + 3, value=str(seqBatch[relativeLine][3][0]))
-                                            # Sequence
-                                            ws.cell(row=workingRow + 1, column=indexHeader + 4, value=str(seqBatch[relativeLine][4][0]))
-                                            # IsPseudo
-                                            if len(seqBatch[relativeLine][5]) == 0:
-                                                ws.cell(row=workingRow + 1, column=indexHeader + 5, value="")
-                                            else:
-                                                ws.cell(row=workingRow + 1, column=indexHeader + 5,value=str(seqBatch[relativeLine][5][0]))
-
-                                            fasta_list.append(record.id)
-                                            fasta_feature.append(seqBatch[relativeLine][1][0])
-                                            fasta_sequence.append(seqBatch[relativeLine][4][0])
-                                        except Exception as e:
-                                            print(e)
-                                            print("Relative Line: " + str(relativeLine))
-                                            print("Number of Repeats: " + str(numberRowsToPrint))
-                                            exit(1)
-                                    else:
-                                        logs_list.append(record.id)
+                        progress(index+1, len(accession_list), suffix)  
+                        
                     break
                 except Exception as ex:
                     print(ex)
