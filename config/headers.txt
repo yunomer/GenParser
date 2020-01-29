@@ -9,3 +9,4 @@ taxonomy
 notes
 country
 isolate
+seq

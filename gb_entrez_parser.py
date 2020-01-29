@@ -262,13 +262,13 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
 
             # Number of attempts to retry the try statement
             attempts = 0
-
-            while attempts < 4:
+                    
+            while attempts <= 3:
                 try:
                     fetched_gb = Entrez.efetch(db="nucleotide", id=acc_list, rettype="gbwithparts", retmode="text")
                     for index, record in enumerate(SeqIO.parse(fetched_gb, "gb")):
                         suffix = "Processing Set: " + str(counter) + ", ID: " + record.id
-                        progress(index+1, 300, suffix)
+                        # progress(index+1, 300, suffix)
                         keyValues = []
                         # First get data to populate header fields
                         for header in header_list:
@@ -288,7 +288,7 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                 pass
 
                         numberRowsToPrint = len(seqBatch)
-
+                        # print(numberRowsToPrint)
                         # TODO: Patch Remove Duplicates process
                         # if numberRowsToPrint > 1:
                         #     # Remove Duplicates
@@ -316,6 +316,7 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                                     else:
                                         extractValue = ", ".join(str(x) for x in extractValue)
                                         ws.cell(row=workingRow+1, column=indexHeader + 1, value=extractValue)
+                                        print(extractValue)
                                 else:
                                     # If no sequences were found here. Add to logs list
                                     if len(seqBatch) != 0:
@@ -351,6 +352,9 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                     print("sleeping for 10 seconds")
                     time.sleep(10)
                     attempts += 1
+            if attempts >= 4:
+                for exception_failed_id in chunk:
+                    logs_list.append(exception_failed_id)
             long_delay = long_delay + 1
             if long_delay == 20:
                 print("sleeping for 2 minutes")

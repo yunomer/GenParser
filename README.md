@@ -40,7 +40,7 @@ To address that, currently users have to identify the sequence location in the G
 An example is provided in the config file (features.txt, recognition.txt).
 
 In In the example, we see that the features list contains the name of the feature to look in (i.e CDS, Gene). The script requires the Feature to contain a "Hook" to latch onto and extract the sequence if present. The recognition hook can be either a key (Text before the '=') or the value (Text after the '=').
-If no custom Recognition list or Feature list is provided, a default one is utilized, that can be modified in the config file.
+If no custom Recognition list or Feature list is provided, a default one is utilized, that can be modified in the config file. To get extract the sequence, in the custom header file use 'seq'.
 However if you would like to use a custom Recognition and Feature list to identify specific sequences you can simply run the script using flags above:
 ```sh
     python3 gb_entrez_parser.py [ACCESSION LIST FILE] --feature [FEATURE FILE] -- recognition [RECOGNITION FILE]
