@@ -35,38 +35,41 @@ args = parser.parse_args()
 
 
 def fetch_sequence(feature, recognition_list, record, feature_list):
-    for val in feature.qualifiers.items():
-        gene = []
-        sequence = []
-        location = []
-        qualifiers = []
-        pseudo = []
-        for value in val:
-            if isinstance(value, list):
-                value = value[0]
+    for val in feature.qualifiers:
+        print(val)
+    # for val in feature.qualifiers.items():
+    #     print(val)
+    #     gene = []
+    #     sequence = []
+    #     location = []
+    #     qualifiers = []
+    #     pseudo = []
+    #     for value in val:
+    #         if isinstance(value, list):
+    #             value = value[0]
 
-            if value in recognition_list and (feature.type in feature_list):
-                try:
-                    gene.append(value)
-                    sequence.append(feature.location.extract(record).seq)
-                    location.append(feature.location)
+    #         if value in recognition_list and (feature.type in feature_list):
+    #             try:
+    #                 gene.append(value)
+    #                 sequence.append(feature.location.extract(record).seq)
+    #                 location.append(feature.location)
 
-                    for qualifier in feature.qualifiers.items():
-                        key = qualifier[0]
-                        value = qualifier[1]
-                        if isinstance(value, list):
-                            value = qualifier[1][0]
-                        qualifier_string = str(key) + ": " + str(value)
-                        qualifiers.append(qualifier_string)
+    #                 for qualifier in feature.qualifiers.items():
+    #                     key = qualifier[0]
+    #                     value = qualifier[1]
+    #                     if isinstance(value, list):
+    #                         value = qualifier[1][0]
+    #                     qualifier_string = str(key) + ": " + str(value)
+    #                     qualifiers.append(qualifier_string)
 
-                    for item in feature.qualifiers:
-                        matchRatio = fuzz.ratio(item, "pseudo")
-                        if matchRatio > 80:
-                            pseudo.append(item)
-                    return feature.type, gene, qualifiers, location, sequence, pseudo
-                except KeyError:
-                    pass
-        return feature.type, gene, qualifiers, location, sequence, pseudo
+    #                 for item in feature.qualifiers:
+    #                     matchRatio = fuzz.ratio(item, "pseudo")
+    #                     if matchRatio > 80:
+    #                         pseudo.append(item)
+    #                 return feature.type, gene, qualifiers, location, sequence, pseudo
+    #             except KeyError:
+    #                 pass
+    #     return feature.type, gene, qualifiers, location, sequence, pseudo
 
 
 def fetch_match(header, record):
@@ -77,7 +80,7 @@ def fetch_match(header, record):
     :param record: record is the genbank record for a specific accession ID         -REQUIRED
     :return:
     """
-    output = []
+    output = ""
     # Try and see if the header can be found in the root of the object record
     try:
         methods = dir(record)
@@ -85,7 +88,7 @@ def fetch_match(header, record):
             matchRatio = fuzz.ratio(header, method)
             if matchRatio > 90:
                 method_called = getattr(record, method)
-                output.append(method_called)
+                output = output + method_called
         if len(output) != 0:
             return output
         pass
@@ -99,8 +102,7 @@ def fetch_match(header, record):
                 if isinstance(record.annotations[key], list):
                     for item in record.annotations[key]:
                         string = str(item).rstrip().replace('\n', '| ')
-                        # print("|" + string + "|")
-                        output.append(string)
+                        output = output + string
         if len(output) != 0:
             return output
         pass
@@ -115,7 +117,10 @@ def fetch_match(header, record):
                 for key in unPackKeys:
                     matchRatio = fuzz.ratio(header, key)
                     if matchRatio > 90:
-                        output.append(feature_dict.qualifiers[key])
+                        if isinstance(feature_dict.qualifiers[key], list):
+                            output = output + str(feature_dict.qualifiers[key][0])
+                        else:
+                            output = output + str(feature_dict.qualifiers[key])
             except KeyError:
                 pass
         return output
@@ -270,8 +275,23 @@ def execute(input_file_name, fasta_file, tsv_file, log_file, header_list, featur
                     fetched_gb = Entrez.efetch(db="nucleotide", id=accession_string, rettype="gbwithparts", retmode="text")
                     for index, record in enumerate(SeqIO.parse(fetched_gb, "gb")):
                         suffix = "Processing Set: " + str(counter) + ", ID: " + record.id
-                        progress(index+1, len(accession_list), suffix)  
-                        
+                        # progress(index+1, len(accession_list), suffix) 
+                        keyValues = [] 
+                        for header in header_list:
+                            found = fetch_match(header, record)
+                            keyValues.append(found)
+                        header_dict = dict(zip(header_list, keyValues)) 
+
+                        seqBatch = []
+                        # Fetch the sequence data
+                        for feature in record.features:
+                            if feature.type in feature_list:
+                                seqInfo = fetch_sequence(feature, recognition_list, record, feature_list)
+                            try:
+                                if len(seqInfo[1]) != 0:
+                                    seqBatch.append(seqInfo)
+                            except:
+                                pass             
                     break
                 except Exception as ex:
                     print(ex)

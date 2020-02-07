@@ -41,7 +41,8 @@ default_head_list = [
 
 default_fet_list = [
     "CDS",
-    "gene"
+    "gene",
+    "source"
 ]
 
 country_list = [
